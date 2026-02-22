@@ -101,21 +101,17 @@ class BrickBreakerGame:
     
     def __init__(self, display):
         self.display = display
-        self.game = bb.Game(display.width, display.height)
+        self.game = bb.Game(display.width, display.height, display=display)
     
     def run(self):
         """Main game loop"""
         self.game.draw(self.display)
         while True:
-            events = inputs.poll()
-            if events:
-                for e in events:
-                    if e == "UP":
-                        self.game.set_input(left=True, right=False)
-                    elif e == "DOWN":
-                        self.game.set_input(left=False, right=True)
-            # In a real implementation, you would read actual input here
-            # For now, this is a simulation loop
+            # Get continuous button state (allows holding buttons)
+            button_state = inputs.get_button_state()
+            self.game.set_input(left=button_state.get("UP", False), 
+                               right=button_state.get("DOWN", False))
+            
             self.game.update()
             self.game.draw(self.display)
             sleep(0.05)  # ~20 FPS

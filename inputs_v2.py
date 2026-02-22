@@ -36,3 +36,12 @@ class ButtonEvents:
             self.last_state[name] = v # updating state value
         
         return events
+    
+    def get_button_state(self):
+        ''' Returns a dict of current button states for continuous input (held buttons)
+            Usage: state = inputs.get_button_state()
+                   if state["UP"]: paddle moves left (while held)'''
+        state = {}
+        for name, pin in self.buttons.items():
+            state[name] = pin.value() == 1  # True if pressed, False if released
+        return state

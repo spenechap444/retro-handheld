@@ -10,10 +10,11 @@ import random
 from time import sleep
 
 class Game:
-    def __init__(self, width=125, height=50):
+    def __init__(self, width=125, height=50, display=None):
         self.width = width
         self.height = height
         self.ceiling = 8
+        self.display = display  # Store display reference for immediate refreshes
 
         # Game state
         self.running = True
@@ -122,6 +123,9 @@ class Game:
                     brick['active'] = False
                     self.score += 10
                     self.ball_vy *= -1 # reverse vertical velocity on hit
+                    # Force a display buffer refresh to prevent ghosting
+                    if self.display:
+                        self.display.show()
                     break
 
             # Ball out of bounds
@@ -152,20 +156,20 @@ class Game:
     def draw(self, display):
         """Draw game to display"""
         display.fill(0)
-        
+
         # Draw bricks
         for brick in self.bricks:
             if brick['active']:
-                # Draw brick outline
+                # Draw brick filled rectangle instead of outline to ensure pixels are written
                 x, y = int(brick['x']), int(brick['y'])
-                display.rect(x, y, self.brick_width, self.brick_height, 1)
+                display.fill_rect(x, y, self.brick_width, self.brick_height, 1)
         
-        # Draw paddle
-        display.rect(int(self.paddle_x), int(self.paddle_y), 
-                    self.paddle_width, self.paddle_height, 1)
+        # Draw paddle (filled)
+        display.fill_rect(int(self.paddle_x), int(self.paddle_y), 
+                         self.paddle_width, self.paddle_height, 1)
         
-        # Draw ball
-        display.rect(int(self.ball_x), int(self.ball_y), self.ball_radius, self.ball_radius, 1)
+        # Draw ball (filled)
+        display.fill_rect(int(self.ball_x), int(self.ball_y), self.ball_radius, self.ball_radius, 1)
         
         # Draw score and lives at top
         display.text(f"{self.score}", 0, 0, 1)
