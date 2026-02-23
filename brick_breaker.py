@@ -9,6 +9,16 @@ import math
 import random
 from time import sleep
 
+class Brick:
+    """Represents a single brick in the game"""
+    def __init__(self, x, y, width, height, value=1):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.active = True  # Whether the brick is still unbroken
+        self.value = value
+
 class Game:
     def __init__(self, width=125, height=50, display=None):
         self.width = width
@@ -23,7 +33,7 @@ class Game:
         self.lives = 3
 
         # Paddle
-        self.paddle_width = 20
+        self.paddle_width = 15
         self.paddle_height = 3
         self.paddle_x = (width - self.paddle_width) // 2 # paddle starts centered
         self.paddle_y = height - 5  # setting paddle height above bottom edge
@@ -55,12 +65,16 @@ class Game:
     def create_bricks(self, rows, cols, start_x, start_y):
         """Creating initial brick layout"""
         self.bricks = []
-        for row in range(rows):
+        for row in range(rows): # avoiding divideby zero
             for col in range(cols):
                 x = start_x + col * (self.brick_width + self.brick_padding)
                 y = start_y + row * (self.brick_height + self.brick_padding)
                 if x + self.brick_width < self.width - 2:
-                    self.bricks.append({'x': x, 'y': y, 'active': True})
+                    self.bricks.append(Brick(x=x,
+                                            y=y,
+                                            width=self.brick_width,
+                                            height=self.brick_height,
+                                            value = int(12 / (row+1)) * self.level)) # higher rows worth more points
         
     def update(self):
         """Updating game state based on input and collisions"""
@@ -116,12 +130,12 @@ class Game:
 
             # Ball collision with bricks
             for brick in self.bricks:
-                if not brick['active']:
+                if not brick.active:
                     continue
 
                 if self.check_brick_collision(brick):
-                    brick['active'] = False
-                    self.score += 10
+                    brick.active = False
+                    self.score += brick.value
                     self.ball_vy *= -1 # reverse vertical velocity on hit
                     # Force a display buffer refresh to prevent ghosting
                     if self.display:
@@ -136,7 +150,7 @@ class Game:
                     self.running = False
 
         # Check for win state (all bricks destroyed)
-        if all(not brick['active'] for brick in self.bricks):
+        if all(not brick.active for brick in self.bricks):
             self.level += 1
             self.ball_active = False
             self.ball_speed *= 1.1 # increase ball speed for next level
@@ -147,8 +161,8 @@ class Game:
     
     def check_brick_collision(self, brick):
         """Check if ball collides with brick"""
-        closest_x = max(brick['x'], min(self.ball_x, brick['x'] + self.brick_width))
-        closest_y = max(brick['y'], min(self.ball_y, brick['y'] + self.brick_height))
+        closest_x = max(brick.x, min(self.ball_x, brick.x + self.brick_width))
+        closest_y = max(brick.y, min(self.ball_y, brick.y + self.brick_height))
         
         distance = math.sqrt((self.ball_x - closest_x)**2 + (self.ball_y - closest_y)**2)
         return distance < self.ball_radius
@@ -159,9 +173,9 @@ class Game:
 
         # Draw bricks
         for brick in self.bricks:
-            if brick['active']:
+            if brick.active:
                 # Draw brick filled rectangle instead of outline to ensure pixels are written
-                x, y = int(brick['x']), int(brick['y'])
+                x, y = int(brick.x), int(brick.y)
                 display.fill_rect(x, y, self.brick_width, self.brick_height, 1)
         
         # Draw paddle (filled)
@@ -182,7 +196,8 @@ class Game:
         # Draw game over
         if not self.running:
             display.text("GAME OVER", 20, 30, 1)
-            display.text(f"Final score: {self.score}", 0, 45, 1)
+            display.text(f"Final score:", 13, 38, 1)
+            display.text(str(self.score), 45, 48, 1)
         
         display.show()
         
@@ -192,6 +207,8 @@ class Game:
         display.pixel(x, y, 1)        # top left bump
         display.pixel(x + 2, y, 1)    # top right bump
         display.pixel(x + 1, y + 1, 1) # middle
+        display.pixel(x, y + 1, 1) # middle left
+        display.pixel(x + 2, y + 1, 1) # middle right
         display.pixel(x + 1, y + 2, 1) # bottom point
     
     def set_input(self, left, right):
@@ -219,3 +236,4 @@ class BrickBreakerGame:
             if not self.game.running:
                 sleep(2)
                 break
+
